@@ -1,23 +1,28 @@
-require "sower/version"
+require 'sower/version'
 require 'csv'
 
 module Sower
   def self.seed(clazz, filename, options = {})
-    sql_path = File.join(seeds_path, "#{filename}.sql")
-    csv_path = File.join(seeds_path, "#{filename}.csv")
+    sql_path  = File.join(seeds_path, "#{filename}.sql")
+    csv_path  = File.join(seeds_path, "#{filename}.csv")
     text_path = File.join(seeds_path, "#{filename}.txt")
+
+    old_table_name = clazz.table_name
+    if @schema.present?
+      clazz.table_name = "#{@schema}.#{clazz.table_name}"
+    end
 
     if clazz.respond_to?(:enumeration_model_updates_permitted=)
       clazz.enumeration_model_updates_permitted = true
     end
 
     if File.exists?(sql_path)
-      puts "Importing #{filename} as SQL"
+      puts "Importing #{filename} to #{clazz.table_name} as SQL"
 
       data = File.read(sql_path)
       ActiveRecord::Base.connection.execute data
     elsif File.exists?(csv_path)
-      puts "Importing #{filename} as CSV"
+      puts "Importing #{filename} to #{clazz.table_name} as CSV"
 
       index = 0
       CSV.foreach(csv_path) do |row|
@@ -39,7 +44,7 @@ module Sower
         index += 1
       end
     else
-      puts "Importing #{filename} as Text"
+      puts "Importing #{filename} to #{clazz.table_name} as Text"
 
       File.foreach(text_path).each_with_index do |line, index|
         m = clazz.new(:name => line.chomp)
@@ -53,6 +58,8 @@ module Sower
       ActiveRecord::Base.connection.execute \
         "SELECT setval('#{clazz.table_name}_id_seq'::regclass, MAX(id)) FROM #{clazz.table_name};"
     end
+
+    clazz.table_name = old_table_name
   end
 
   def self.seeds_path=(path)
@@ -67,6 +74,10 @@ module Sower
     else
       raise "No path to seeds found! Set Sower.seeds_path"
     end
+  end
+
+  def self.schema=(schema)
+    @schema = schema
   end
 
 end
