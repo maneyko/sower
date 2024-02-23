@@ -16,12 +16,12 @@ module Sower
       clazz.enumeration_model_updates_permitted = true
     end
 
-    if File.exists?(sql_path)
+    if File.exist?(sql_path)
       puts "Importing #{filename} to #{clazz.table_name} as SQL"
 
       data = File.read(sql_path)
       ActiveRecord::Base.connection.execute data
-    elsif File.exists?(csv_path)
+    elsif File.exist?(csv_path)
       puts "Importing #{filename} to #{clazz.table_name} as CSV"
 
       index = 0
